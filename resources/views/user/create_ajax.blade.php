@@ -1,51 +1,40 @@
-<form action="{{ route('barang.store_ajax') }}" method="POST" id="form-tambah-barang">
+<form action="{{ url('/user/ajax') }}" method="POST" id="form-tambah">
     @csrf
     <div id="modal-master" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tambah Data Barang</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Tambah Data User</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Kategori</label>
-                    <select name="kategori_id" id="kategori_id" class="form-control" required>
-                        <option value="">- Pilih Kategori -</option>
-                        @foreach ($kategori as $k)
-                            <option value="{{ $k->kategori_id }}">{{ $k->kategori_nama }}</option>
+                    <label>Level Pengguna</label>
+                    <select name="level_id" id="level_id" class="form-control" required>
+                        <option value="">- Pilih Level -</option>
+                        @foreach ($level as $l)
+                            <option value="{{ $l->level_id }}">{{ $l->level_nama }}</option>
                         @endforeach
                     </select>
-                    <small id="error-kategori_id" class="error-text form-text text-danger"></small>
+                    <small id="error-level_id" class="error-text form-text text-danger"></small>
                 </div>
-
                 <div class="form-group">
-                    <label>Kode Barang</label>
-                    <input type="text" name="barang_kode" id="barang_kode" class="form-control" required>
-                    <small id="error-barang_kode" class="error-text form-text text-danger"></small>
+                    <label>Username</label>
+                    <input type="text" name="username" id="username" class="form-control" required>
+                    <small id="error-username" class="error-text form-text text-danger"></small>
                 </div>
-
                 <div class="form-group">
-                    <label>Nama Barang</label>
-                    <input type="text" name="barang_nama" id="barang_nama" class="form-control" required>
-                    <small id="error-barang_nama" class="error-text form-text text-danger"></small>
+                    <label>Nama</label>
+                    <input type="text" name="nama" id="nama" class="form-control" required>
+                    <small id="error-nama" class="error-text form-text text-danger"></small>
                 </div>
-
                 <div class="form-group">
-                    <label>Harga Beli</label>
-                    <input type="number" name="harga_beli" id="harga_beli" class="form-control" required>
-                    <small id="error-harga_beli" class="error-text form-text text-danger"></small>
-                </div>
-
-                <div class="form-group">
-                    <label>Harga Jual</label>
-                    <input type="number" name="harga_jual" id="harga_jual" class="form-control" required>
-                    <small id="error-harga_jual" class="error-text form-text text-danger"></small>
+                    <label>Password</label>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                    <small id="error-password" class="error-text form-text text-danger"></small>
                 </div>
             </div>
-            
             <div class="modal-footer">
                 <button type="button" data-dismiss="modal" class="btn btn-warning">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan</button>
@@ -56,30 +45,24 @@
 
 <script>
     $(document).ready(function() {
-        $("#form-tambah-barang").validate({
+        $("#form-tambah").validate({
             rules: {
-                kategori_id: {
+                level_id: {
                     required: true,
                     digits: true
                 },
-                barang_kode: {
+                username: {
                     required: true,
                     minlength: 3,
-                    maxlength: 50
+                    maxlength: 20
                 },
-                barang_nama: {
+                nama: {
                     required: true,
-                    maxlength: 255
+                    maxlength: 100
                 },
-                harga_beli: {
+                password: {
                     required: true,
-                    number: true,
-                    min: 0
-                },
-                harga_jual: {
-                    required: true,
-                    number: true,
-                    min: 0
+                    minlength: 6
                 }
             },
             submitHandler: function(form) {
@@ -87,35 +70,29 @@
                     url: form.action,
                     type: form.method,
                     data: $(form).serialize(),
-                    success: function(response) {
-                        if (response.status) {
-                            $('#myModal').modal('hide');
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil',
-                                text: response.message,
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                if (typeof dataBarang !== 'undefined') {
-                                    dataBarang.ajax.reload();
-                                } else {
-                                    $('#table_barang').DataTable().ajax.reload();
-                                }
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal',
-                                text: response.message
-                            });
-                        }
+                            success: function(response) {
+                    if (response.status) {
+                        $('#myModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message,
+                            showConfirmButton: false,
+                            timer: 1500
+                        }).then(() => {
+                            if (typeof dataUser !== 'undefined') {
+                                dataUser.ajax.reload();
+                            } else {
+                                $('#table_user').DataTable().ajax.reload();
+                            }
+                        });
+                    }
                     },
-                    error: function(xhr) {
+                    error: function() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Terjadi Kesalahan',
-                            text: xhr.responseJSON ? xhr.responseJSON.message : 'Gagal menghubungi server'
+                            text: 'Gagal menghubungi server'
                         });
                     }
                 });

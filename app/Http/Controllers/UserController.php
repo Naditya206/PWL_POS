@@ -293,33 +293,37 @@ class UserController extends Controller
     return redirect('/');
 }
 
-public function confirm_ajax(string $id){
-    $user = UserModel::find($id);
+// Menampilkan konfirmasi hapus level via modal ajax
+public function confirm_ajax(string $id)
+{
+    $level = LevelModel::find($id);
 
-    return view('user.confirm_ajax', ['user' => $user]);
+    return view('level.confirm_ajax', ['level' => $level]);
 }
 
+// Menghapus level via ajax
 public function delete_ajax(Request $request, $id)
 {
-    // cek apakah request dari ajax
+    // Pastikan request datang dari ajax
     if ($request->ajax() || $request->wantsJson()) {
-        $user = UserModel::find($id);
-        if ($user) {
-            $user->delete();
+        $level = LevelModel::find($id);
+        if ($level) {
+            $level->delete();
             return response()->json([
                 'status'  => true,
-                'message' => 'Data berhasil dihapus'
+                'message' => 'Level berhasil dihapus'
             ]);
         } else {
             return response()->json([
                 'status'  => false,
-                'message' => 'Data tidak ditemukan'
+                'message' => 'Level tidak ditemukan'
             ]);
         }
     }
 
     return redirect('/');
 }
+
 
 
 }
