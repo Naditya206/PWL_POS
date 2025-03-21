@@ -6,6 +6,7 @@ use App\Models\BarangModel;
 use App\Models\KategoriModel;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Validator;
 
 class BarangController extends Controller
 {
@@ -143,6 +144,120 @@ class BarangController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Barang gagal dihapus!'
+            ]);
+        }
+    }
+
+    public function create_ajax()
+{
+    $kategori = KategoriModel::all();
+
+    return view('barang.create_ajax', compact('kategori'))->render();
+}
+
+
+        // Store AJAX (proses simpan)
+        public function store_ajax(Request $request)
+        {
+            $validator = \Validator::make($request->all(), [
+                'kategori_id' => 'required|exists:m_kategori,kategori_id',
+                'barang_kode' => 'required|string|max:50|unique:m_barang,barang_kode',
+                'barang_nama' => 'required|string|max:100',
+                'harga_beli' => 'required|numeric',
+                'harga_jual' => 'required|numeric'
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal.',
+                    'errors' => $validator->errors()
+                ]);
+            }
+    
+            try {
+                BarangModel::create($request->all());
+    
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Barang berhasil ditambahkan.'
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang gagal ditambahkan.',
+                    'error' => $e->getMessage()
+                ]);
+            }
+            redirect('/');
+        }
+
+            // Edit AJAX (tampilkan data untuk form edit)
+    public function edit_ajax($id)
+    {
+        $barang = BarangModel::find($id);
+        $kategori = KategoriModel::all();
+
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Barang tidak ditemukan!'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data barang berhasil dimuat.',
+            'data' => [
+                'barang' => $barang,
+                'kategori' => $kategori
+            ]
+        ]);
+    }
+
+        // Confirm AJAX (untuk menampilkan info sebelum hapus)
+        public function confirm_ajax($id)
+        {
+            $barang = BarangModel::find($id);
+    
+            if (!$barang) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak ditemukan!'
+                ]);
+            }
+    
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data barang ditemukan.',
+                'data' => $barang
+            ]);
+        }
+
+            // Delete AJAX (hapus data barang)
+    public function delete_ajax($id)
+    {
+        $barang = BarangModel::find($id);
+
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Barang tidak ditemukan!'
+            ]);
+        }
+
+        try {
+            $barang->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Barang berhasil dihapus.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Barang gagal dihapus.',
+                'error' => $e->getMessage()
             ]);
         }
     }

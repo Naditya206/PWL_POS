@@ -1,20 +1,21 @@
-<form action="{{ url('/barang/ajax') }}" method="POST" id="form-tambah-barang">
+<form action="{{ route('barang.ajax.store') }}" method="POST" id="form-tambah">
     @csrf
-    <div id="modal-master" class="modal-dialog modal-lg" role="document">
+    <div id="modal-barang" class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tambah Data Barang</h5>
+                <h5 class="modal-title">Tambah Barang</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             
             <div class="modal-body">
+
                 <div class="form-group">
                     <label>Kategori</label>
                     <select name="kategori_id" id="kategori_id" class="form-control" required>
-                        <option value="">- Pilih Kategori -</option>
-                        @foreach ($kategori as $k)
+                        <option value="">Pilih Kategori</option>
+                        @foreach($kategori as $k)
                             <option value="{{ $k->kategori_id }}">{{ $k->kategori_nama }}</option>
                         @endforeach
                     </select>
@@ -44,6 +45,7 @@
                     <input type="number" name="harga_jual" id="harga_jual" class="form-control" required>
                     <small id="error-harga_jual" class="error-text form-text text-danger"></small>
                 </div>
+
             </div>
             
             <div class="modal-footer">
@@ -56,30 +58,28 @@
 
 <script>
     $(document).ready(function() {
-        $("#form-tambah-barang").validate({
+        $("#form-tambah").validate({
             rules: {
                 kategori_id: {
-                    required: true,
-                    digits: true
+                    required: true
                 },
                 barang_kode: {
                     required: true,
-                    minlength: 3,
+                    minlength: 2,
                     maxlength: 50
                 },
                 barang_nama: {
                     required: true,
-                    maxlength: 255
+                    minlength: 3,
+                    maxlength: 100
                 },
                 harga_beli: {
                     required: true,
-                    number: true,
-                    min: 0
+                    number: true
                 },
                 harga_jual: {
                     required: true,
-                    number: true,
-                    min: 0
+                    number: true
                 }
             },
             submitHandler: function(form) {
@@ -88,8 +88,8 @@
                     type: form.method,
                     data: $(form).serialize(),
                     success: function(response) {
-                        if (response.status) {
-                            $('#myModal').modal('hide');
+                        if (response.status === 'success') {
+                            $('#modal-barang').modal('hide');
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',
@@ -112,11 +112,21 @@
                         }
                     },
                     error: function(xhr) {
+                        let res = xhr.responseJSON;
+                        let message = res && res.message ? res.message : 'Gagal menghubungi server';
                         Swal.fire({
                             icon: 'error',
                             title: 'Terjadi Kesalahan',
-                            text: xhr.responseJSON ? xhr.responseJSON.message : 'Gagal menghubungi server'
+                            text: message
                         });
+
+                        // Optional: tampilkan error validasi di field (kalau ada)
+                        if (res && res.errors) {
+                            $.each(res.errors, function(field, messages) {
+                                $('#error-' + field).text(messages[0]);
+                                $('#' + field).addClass('is-invalid');
+                            });
+                        }
                     }
                 });
                 return false;
