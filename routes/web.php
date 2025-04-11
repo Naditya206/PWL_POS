@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
 
 
 Route::pattern('id', '[0-9]+'); // artinya ketika ada parameter id, maka harus berupa angka
@@ -159,5 +160,6 @@ Route::middleware(['authorize:ADM,MNG'])->group(function(){
     Route::get('/barang/export_pdf', [BarangController::class, 'export_pdf']); // export excel
 });
 
-
+Route::get('/profile', [ProfileController::class, 'index'])->middleware('auth');
+Route::post('/profile/update-foto', [ProfileController::class, 'uploadFoto'])->middleware('auth');
 
