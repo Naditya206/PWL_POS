@@ -6,6 +6,7 @@ use App\Models\SupplierModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\Facades\DataTables;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SupplierController extends Controller
 {
@@ -288,4 +289,74 @@ public function update_ajax(Request $request, string $id)
     }
     return redirect('/supplier');
     }
+
+    public function import()
+    {
+        return view('supplier.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_supplier' => ['required', 'mimes:xlsx,xls', 'max:1024'] // max 1MB
+            ];
+    
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'   => false,
+                    'message'  => 'Validasi Gagal',
+                    'errors'   => $validator->errors()
+                ]);
+            }
+    
+            try {
+                $file = $request->file('file_supplier');
+                $spreadsheet = IOFactory::load($file);
+                $sheet = $spreadsheet->getActiveSheet();
+                $rows = $sheet->toArray();
+    
+                // Asumsikan baris pertama adalah header
+                unset($rows[0]);
+    
+                $imported = 0;
+                foreach ($rows as $row) {
+                    $supplierId    = $row[0] ?? null;
+                    $namaSupplier  = $row[1] ?? null;
+                    $kontak        = $row[2] ?? null;
+                    $alamat        = $row[3] ?? null;
+    
+                    // Validasi sederhana tiap baris (bisa dikembangkan)
+                    if ($supplierId && $namaSupplier && $kontak && $alamat) {
+                        // Hindari duplikasi berdasarkan supplier_id
+                        $exists = SupplierModel::find($supplierId);
+                        if (!$exists) {
+                            SupplierModel::create([
+                                'supplier_id'   => $supplierId,
+                                'nama_supplier' => $namaSupplier,
+                                'kontak'        => $kontak,
+                                'alamat'        => $alamat,
+                            ]);
+                            $imported++;
+                        }
+                    }
+                }
+    
+                return response()->json([
+                    'status'  => true,
+                    'message' => "$imported data supplier berhasil diimport.",
+                ]);
+    
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Terjadi kesalahan saat membaca file: ' . $e->getMessage()
+                ]);
+            }
+        }
+    
+        return redirect('/supplier');
+    }
+
 }
