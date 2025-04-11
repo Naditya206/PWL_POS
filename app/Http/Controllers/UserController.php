@@ -7,6 +7,7 @@ use App\Models\UserModel;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class UserController extends Controller
 {
@@ -347,4 +348,75 @@ class UserController extends Controller
             return redirect('/user');
         }
 
+        public function import()
+        {
+            return view('user.import');
+        }
+
+        public function import_ajax(Request $request)
+        {
+            // Validasi file Excel
+            $request->validate([
+                'file_user' => 'required|mimes:xls,xlsx',
+            ]);
+        
+            $file = $request->file('file_user');
+        
+            // Buka file Excel
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, true);
+        
+            $inserted = 0;
+            $skipped = [];
+        
+            foreach ($rows as $index => $row) {
+                // Skip header (baris pertama)
+                if ($index == 1) continue;
+        
+                // Ambil data dari kolom A-D (misal A=username, B=nama, C=password, D=level_id)
+                $data = [
+                    'username' => trim($row['A']),
+                    'nama' => trim($row['B']),
+                    'password' => trim($row['C']),
+                    'level_id' => trim($row['D']),
+                ];
+        
+                // Validasi per baris
+                $validator = Validator::make($data, [
+                    'username' => 'required|string|min:3|unique:m_user,username',
+                    'nama' => 'required|string|max:100',
+                    'password' => 'required|string|min:6',
+                    'level_id' => 'required|integer',
+                ]);
+        
+                if ($validator->fails()) {
+                    // Simpan info gagal untuk dilaporkan nanti
+                    $skipped[] = [
+                        'row' => $index,
+                        'username' => $data['username'],
+                        'errors' => $validator->errors()->all(),
+                    ];
+                    continue;
+                }
+        
+                // Simpan ke database
+                UserModel::create([
+                    'username' => $data['username'],
+                    'nama' => $data['nama'],
+                    'password' => bcrypt($data['password']),
+                    'level_id' => $data['level_id'],
+                ]);
+        
+                $inserted++;
+            }
+        
+            return response()->json([
+                'status' => true,
+                'message' => "Import selesai. $inserted data berhasil ditambahkan.",
+                'skipped' => $skipped,
+            ]);
+
+            return redirect('/');
+        }        
 }
