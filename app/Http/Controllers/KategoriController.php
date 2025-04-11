@@ -320,4 +320,37 @@ public function import_ajax(Request $request)
     return redirect('/kategori');
 }
 
+public function export_excel()
+{
+    $kategori = KategoriModel::all();
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Set header kolom
+    $sheet->setCellValue('A1', 'ID Kategori');
+    $sheet->setCellValue('B1', 'Kode Kategori');
+    $sheet->setCellValue('C1', 'Nama Kategori');
+
+    // Isi data mulai dari baris ke-2
+    $row = 2;
+    foreach ($kategori as $item) {
+        $sheet->setCellValue('A' . $row, $item->kategori_id);
+        $sheet->setCellValue('B' . $row, $item->kategori_kode);
+        $sheet->setCellValue('C' . $row, $item->kategori_nama);
+        $row++;
+    }
+
+    // Buat file excel
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $fileName = 'data_kategori_' . date('Ymd_His') . '.xlsx';
+
+    // Simpan file ke sementara dan kirim ke response
+    $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+    $writer->save($tempFile);
+
+    return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+}
+
+
 }
