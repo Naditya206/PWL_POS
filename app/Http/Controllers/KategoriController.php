@@ -6,6 +6,7 @@ use App\Models\KategoriModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\Facades\DataTables;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class KategoriController extends Controller
 {
@@ -251,4 +252,72 @@ class KategoriController extends Controller
         }
         return redirect('/kategori');
     }
+
+    public function import()
+    {
+        return view('kategori.import');
+    }
+
+public function import_ajax(Request $request)
+{
+    if ($request->ajax() || $request->wantsJson()) {
+        $rules = [
+            'file_kategori' => ['required', 'mimes:xlsx,xls', 'max:1024'] // 1MB max
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi Gagal',
+                'msgField' => $validator->errors()
+            ]);
+        }
+
+        $file = $request->file('file_kategori');
+
+        $reader = IOFactory::createReader('Xlsx');
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($file->getRealPath());
+        $sheet = $spreadsheet->getActiveSheet();
+        $data = $sheet->toArray(null, false, true, true); // ['A' => 'kode', 'B' => 'nama']
+
+        $insert = [];
+        if (count($data) > 1) {
+            foreach ($data as $row => $value) {
+                if ($row > 1) { // Lewati baris pertama (header)
+                    if (!empty($value['A']) && !empty($value['B'])) {
+                        $insert[] = [
+                            'kategori_kode' => $value['A'],
+                            'kategori_nama' => $value['B'],
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($insert)) {
+                // Optional: validasi unik kategori_kode sebelum insert
+                foreach ($insert as $item) {
+                    $exists = KategoriModel::where('kategori_kode', $item['kategori_kode'])->exists();
+                    if (!$exists) {
+                        KategoriModel::create($item);
+                    }
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Data kategori berhasil diimport'
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Tidak ada data yang bisa diimport'
+        ]);
+    }
+
+    return redirect('/kategori');
+}
+
 }

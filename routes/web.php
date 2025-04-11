@@ -93,6 +93,8 @@ Route::middleware(['auth', 'authorize:ADM,MNG'])->group(function () {
         Route::get('/{id}/delete_ajax', [KategoriController::class, 'confirm_ajax']);
         Route::delete('/{id}/delete_ajax', [KategoriController::class, 'delete_ajax']);
         Route::delete('/{id}', [KategoriController::class, 'destroy'])->name('kategori.destroy');
+        Route::get('/import',[KategoriController::class,'import']); // ajax form upload excel
+        Route::post('/import_ajax',[KategoriController::class,'import_ajax']); // ajax import excel
     });
 
 // Route Supplier
