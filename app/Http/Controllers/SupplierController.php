@@ -358,5 +358,41 @@ public function update_ajax(Request $request, string $id)
     
         return redirect('/supplier');
     }
-
+    
+    public function export_excel()
+    {
+        $suppliers = SupplierModel::all();
+    
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+    
+        // Set header kolom
+        $sheet->setCellValue('A1', 'ID Supplier');
+        $sheet->setCellValue('B1', 'Nama Supplier');
+        $sheet->setCellValue('C1', 'Kontak');
+        $sheet->setCellValue('D1', 'Alamat');
+    
+        // Isi data mulai dari baris ke-2
+        $row = 2;
+        foreach ($suppliers as $supplier) {
+            $sheet->setCellValue('A' . $row, $supplier->supplier_id);
+            $sheet->setCellValue('B' . $row, $supplier->nama_supplier);
+            $sheet->setCellValue('C' . $row, $supplier->kontak);
+            $sheet->setCellValue('D' . $row, $supplier->alamat);
+            $row++;
+        }
+    
+        // Siapkan response untuk download
+        $filename = 'data_supplier_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    
+        // Output file ke browser
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+    
+        $writer->save('php://output');
+        exit;
+    }
+    
 }
