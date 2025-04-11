@@ -419,4 +419,43 @@ class UserController extends Controller
 
             return redirect('/');
         }        
+
+        public function export_excel()
+{
+    $users = UserModel::with('level')->get();
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Set judul kolom
+    $sheet->setCellValue('A1', 'No');
+    $sheet->setCellValue('B1', 'Username');
+    $sheet->setCellValue('C1', 'Nama');
+    $sheet->setCellValue('D1', 'Level');
+
+    // Mengisi data user
+    $row = 2;
+    $no = 1;
+    foreach ($users as $user) {
+        $sheet->setCellValue('A' . $row, $no++);
+        $sheet->setCellValue('B' . $row, $user->username);
+        $sheet->setCellValue('C' . $row, $user->nama);
+        $sheet->setCellValue('D' . $row, $user->level->level_nama ?? '-');
+        $row++;
+    }
+
+    // Buat file Excel
+    $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+    // Set header untuk download
+    $filename = 'Data_User_' . date('Ymd_His') . '.xlsx';
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header('Cache-Control: max-age=0');
+
+    // Tulis file ke output
+    $writer->save('php://output');
+    exit;
+}
+
 }
