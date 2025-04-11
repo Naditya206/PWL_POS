@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class UserController extends Controller
 {
@@ -457,5 +458,21 @@ class UserController extends Controller
     $writer->save('php://output');
     exit;
 }
+
+public function export_pdf()
+{
+    $user = UserModel::with('level')
+        ->select('user_id', 'username', 'nama', 'level_id')
+        ->orderBy('user_id')
+        ->get();
+
+    $pdf = Pdf::loadView('user.export_pdf', ['user' => $user]);
+    $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+    $pdf->setOption('isRemoteEnabled', true); // jika ada gambar dari URL
+    $pdf->render();
+
+    return $pdf->stream('Data User ' . date('Y-m-d H:i:s') . '.pdf');
+}
+
 
 }
