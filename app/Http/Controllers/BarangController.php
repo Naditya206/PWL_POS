@@ -47,12 +47,14 @@ class BarangController extends Controller
         return DataTables::of($barang->get()) // <= ini penting, agar relasi bisa ikut di-load
             ->addIndexColumn()
             ->addColumn('aksi', function ($barang) {
-                // Buat tombol-tombol aksi
-                $btn = '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                $btn = '<div class="d-flex flex-wrap gap-1 justify-content-center">';
+                $btn .= '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button>';
+                $btn .= '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button>';
+                $btn .= '<button onclick="modalAction(\'' . url('/barang/' . $barang->barang_id . '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button>';
+                $btn .= '</div>';
                 return $btn;
             })
+            
             ->addColumn('kategori_nama', function ($barang) {
                 return $barang->kategori->kategori_nama ?? '-';
             })
@@ -65,6 +67,13 @@ class BarangController extends Controller
         $kategori = KategoriModel::select('kategori_id', 'kategori_nama')->get();
         return  view('barang.create_ajax')->with('kategori', $kategori);
     }
+
+    public function show_ajax($id)
+{
+    $barang = BarangModel::with('kategori')->find($id);
+    return view('barang.show_ajax', compact('barang'));
+}
+
 
     public function store_ajax(Request $request)
     {
@@ -99,41 +108,42 @@ class BarangController extends Controller
     public function edit_ajax($id)
     {
         $barang = BarangModel::find($id);
+        $kategori = KategoriModel::select('kategori_id', 'kategori_nama')->get(); // tambahkan ini
         $level = LevelModel::select('level_id', 'level_nama')->get();
-        return view('barang.edit_ajax', ['barang' => $barang, 'level' => $level]);
+        return view('barang.edit_ajax', ['barang' => $barang, 'kategori' => $kategori, 'level' => $level]);
     }
+    
 
     public function update_ajax(Request $request, $id)
     {
-        // cek apakah request dari ajax
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                'kategori_id' => ['required', 'integer', 'exists:m_kategori,kategori_id'],
-                'barang_kode' => ['required', 'min:3', 'max:20',
-'unique:m_barang,barang_kode, '. $id .',barang_id'],
                 'barang_nama' => ['required', 'string', 'max:100'],
                 'harga_beli' => ['required', 'numeric'],
                 'harga_jual' => ['required', 'numeric'],
             ];
-
-            // use Illuminate\Support\Facades\Validator;
+    
             $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
                 return response()->json([
-                    'status' => false, // respon json, true: berhasil, false: gagal
+                    'status' => false,
                     'message' => 'Validasi gagal.',
-                    'msgField' => $validator->errors() // menunjukkan field mana yang error
+                    'msgField' => $validator->errors()
                 ]);
             }
-
-            $check = BarangModel::find($id);
-            if ($check) {
-                $check->update($request->all());
+    
+            $barang = BarangModel::find($id);
+            if ($barang) {
+                $barang->update([
+                    'barang_nama' => $request->barang_nama,
+                    'harga_beli' => $request->harga_beli,
+                    'harga_jual' => $request->harga_jual,
+                ]);
                 return response()->json([
                     'status' => true,
                     'message' => 'Data berhasil diupdate'
                 ]);
-            } else{
+            } else {
                 return response()->json([
                     'status' => false,
                     'message' => 'Data tidak ditemukan'
@@ -142,7 +152,7 @@ class BarangController extends Controller
         }
         return redirect('/');
     }
-
+    
     public function confirm_ajax($id)
     {
         $barang = BarangModel::find($id);
